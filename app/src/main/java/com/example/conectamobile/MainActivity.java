@@ -92,11 +92,19 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_logout) {
+        int id = item.getItemId(); // Obtener ID pulsado
+
+        if (id == R.id.action_logout) {
             FirebaseAuth.getInstance().signOut();
             goToLogin();
             return true;
         }
+        // --- NUEVO: Ir a Perfil ---
+        else if (id == R.id.action_profile) {
+            startActivity(new Intent(this, ProfileActivity.class));
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
