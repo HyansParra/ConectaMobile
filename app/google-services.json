@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "396926219892",
+    "project_id": "conectamobile-fb146",
+    "storage_bucket": "conectamobile-fb146.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:396926219892:android:0515492dfaf8e0e08c8321",
+        "android_client_info": {
+          "package_name": "com.example.conectamobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKgeJoItZVTYvYwLKctkVGr2npuft143o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

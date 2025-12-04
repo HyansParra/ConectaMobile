@@ -1,12 +1,7 @@
+// Archivo: settings.gradle.kts
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -16,6 +11,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // CRÍTICO: Esto permite descargar la librería MQTT arreglada
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
