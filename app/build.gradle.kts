@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.conectamobile"
-        // SOLUCIÓN AL ERROR: Cambiamos minSdk a 26 para soportar los iconos
+        // Cambiamos minSdk a 26 para soportar los iconos
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -29,7 +29,7 @@ android {
     }
 
     compileOptions {
-        // IMPORTANTE: Java 17 para que funcionen las librerías
+        // Java 17 para que funcionen las librerías
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -46,7 +46,8 @@ dependencies {
     implementation("com.google.firebase:firebase-database")
 
     // --- MQTT (Versión corregida) ---
-    implementation("com.github.hannesa2:paho.mqtt.android:3.3.5")
+    implementation("com.github.hannesa2:paho.mqtt.android:4.3.beta1")
+    implementation("androidx.work:work-runtime:2.9.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
 
     testImplementation("junit:junit:4.13.2")

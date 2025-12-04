@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // --- CÓDIGO NUEVO PARA EL MENÚ DE LOGOUT ---
+    // --- CÓDIGO PARA EL MENÚ DE LOGOUT ---
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

@@ -11,7 +11,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // CRÍTICO: Esto permite descargar la librería MQTT arreglada
+        // Esto permite descargar la librería MQTT
         maven { url = uri("https://jitpack.io") }
     }
 }
