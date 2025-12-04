@@ -34,7 +34,7 @@
             android:text="Nombre de Usuario"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black" />
+            android:textColor="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/tvUserEmail"
@@ -42,7 +42,7 @@
             android:layout_height="wrap_content"
             android:text="correo@ejemplo.com"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="?attr/colorOnSurfaceVariant" />
     </LinearLayout>
 
 </LinearLayout>

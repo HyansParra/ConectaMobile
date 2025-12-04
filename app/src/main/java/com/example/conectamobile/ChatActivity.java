@@ -5,10 +5,10 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.annotation.NonNull;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -47,22 +47,34 @@ public class ChatActivity extends AppCompatActivity {
         try {
             // 1. Validar Datos Iniciales
             targetUid = getIntent().getStringExtra("targetUid");
+
+            // Validación de seguridad de sesión
             if (FirebaseAuth.getInstance().getCurrentUser() == null) {
                 showErrorAndExit("Error: No hay sesión activa");
                 return;
             }
+            // Validación de destino
             if (targetUid == null) {
-                // Si esto pasa, el problema está en el UserAdapter o en la Base de Datos
                 showErrorAndExit("Error: El usuario destino no tiene ID (UID nulo)");
                 return;
             }
 
             myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-            // 2. Configurar Referencias
-            String chatId = (myUid.compareTo(targetUid) < 0) ? myUid + "_" + targetUid : targetUid + "_" + myUid;
-            topic = "conectamobile/chat/" + chatId;
-            chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId);
+            // 2. Configurar Referencias (Lógica de Tópico Global vs Privado)
+            if ("GLOBAL_CHAT_ID".equals(targetUid)) {
+                // CASO 1: CHAT PÚBLICO (Para probar con MyMQTT)
+                // Usamos un tópico simple y fijo que cualquiera puede escribir
+                topic = "conectamobile/global";
+                // Guardamos en un nodo especial de Firebase también para historial
+                chatRef = FirebaseDatabase.getInstance().getReference("chats").child("global_chat");
+                setTitle("Canal Público"); // Cambiar título de la ventana
+            } else {
+                // CASO 2: CHAT PRIVADO (El normal de siempre)
+                String chatId = (myUid.compareTo(targetUid) < 0) ? myUid + "_" + targetUid : targetUid + "_" + myUid;
+                topic = "conectamobile/chat/" + chatId;
+                chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId);
+            }
 
             // 3. Configurar UI
             etMessage = findViewById(R.id.etMessage);
@@ -107,8 +119,34 @@ public class ChatActivity extends AppCompatActivity {
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) { }
+
                 @Override
-                public void messageArrived(String topic, MqttMessage message) { }
+                public void messageArrived(String topic, MqttMessage message) {
+                    // Procesamos lo que llega de MyMQTT
+                    String payload = new String(message.getPayload());
+
+                    // Usamos runOnUiThread porque MQTT llega en otro hilo y no puede tocar la UI directo
+                    runOnUiThread(() -> {
+                        // Creamos un mensaje "falso" que viene de fuera
+                        // Usamos un ID "externo" para que se vea a la izquierda (gris)
+                        Message mqttMsg = new Message("usuario_externo_mymqtt", payload, System.currentTimeMillis());
+
+                        // Pequeño truco para evitar ver mis propios mensajes duplicados (Eco)
+                        // Si el último mensaje es igual al que acaba de llegar, lo ignoramos
+                        if (!messageList.isEmpty()) {
+                            Message lastMsg = messageList.get(messageList.size() - 1);
+                            if (lastMsg.text.equals(payload)) {
+                                return; // Es mi propio mensaje que volvió, no lo mostramos de nuevo
+                            }
+                        }
+
+                        // Agregamos a la lista y actualizamos
+                        messageList.add(mqttMsg);
+                        adapter.notifyItemInserted(messageList.size() - 1);
+                        recyclerView.scrollToPosition(messageList.size() - 1);
+                    });
+                }
+
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken token) { }
             });

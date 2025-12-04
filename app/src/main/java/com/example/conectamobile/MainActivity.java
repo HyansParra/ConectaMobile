@@ -4,10 +4,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast; // Importar Toast
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton; // Importar FAB para el chat global
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -44,6 +46,18 @@ public class MainActivity extends AppCompatActivity {
         userList = new ArrayList<>();
         adapter = new UserAdapter(this, userList);
         recyclerView.setAdapter(adapter);
+
+        // --- LÓGICA NUEVA PARA EL CHAT GLOBAL ---
+        FloatingActionButton fabGlobal = findViewById(R.id.fabGlobalChat);
+        fabGlobal.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+            // Usamos códigos especiales para indicar que es el chat público
+            intent.putExtra("targetUid", "GLOBAL_CHAT_ID");
+            intent.putExtra("targetName", "Canal Público (MyMQTT)");
+            startActivity(intent);
+            Toast.makeText(this, "Entrando a Chat Público...", Toast.LENGTH_SHORT).show();
+        });
+        // ----------------------------------------
 
         loadUsers();
     }
