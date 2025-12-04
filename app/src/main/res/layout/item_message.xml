@@ -1,10 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="8dp"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="8dp">
 
-    <TextView android:id="@+id/tvMessageUser" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Usuario" />
-    <TextView android:id="@+id/tvMessageBody" android:textSize="16sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hola mundo" />
+    <LinearLayout
+        android:id="@+id/messageContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:elevation="2dp">
+
+        <TextView
+            android:id="@+id/tvMessageUser"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Usuario"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:textColor="#555555"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:id="@+id/tvMessageBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mensaje"
+            android:textSize="16sp"
+            android:textColor="#000000"/>
+    </LinearLayout>
+
 </LinearLayout>

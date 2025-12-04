@@ -6,6 +6,27 @@
     android:padding="24dp"
     android:gravity="center">
 
+    <androidx.cardview.widget.CardView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginBottom="24dp"
+        app:cardCornerRadius="50dp"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+        <ImageView
+            android:id="@+id/ivProfile"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_menu_camera"
+            android:scaleType="centerCrop"
+            android:background="#E0E0E0" />
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Toca arriba para elegir foto"
+        android:layout_marginBottom="16dp"/>
+
     <EditText android:id="@+id/etName" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Nombre completo" />
     <EditText android:id="@+id/etEmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Email" />
     <EditText android:id="@+id/etPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Contraseña" android:inputType="textPassword" />

@@ -20,7 +20,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
     public ChatAdapter(Context context, List<Message> messages) {
         this.context = context;
         this.messages = messages;
-        this.currentUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        // Obtenemos el ID actual de forma segura
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            this.currentUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        } else {
+            this.currentUid = "";
+        }
     }
 
     @NonNull
@@ -33,35 +38,39 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Message msg = messages.get(position);
+
         holder.tvBody.setText(msg.text);
 
-        // Alinear a la derecha si es mío, izquierda si es otro
-        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) holder.tvBody.getLayoutParams();
-        if (msg.senderId.equals(currentUid)) {
-            holder.tvUser.setText("Yo");
-            holder.container.setGravity(Gravity.END);
+        // Lógica de Burbujas y Alineación
+        boolean isMe = msg.senderId != null && msg.senderId.equals(currentUid);
+
+        if (isMe) {
+            // MENSAJE MÍO: Derecha, Fondo Verde
+            holder.rootLayout.setGravity(Gravity.END);
+            holder.container.setBackgroundResource(R.drawable.bg_message_me);
+            holder.tvUser.setVisibility(View.GONE); // No necesito ver mi nombre
         } else {
-            holder.tvUser.setText("Otro");
-            holder.container.setGravity(Gravity.START);
+            // MENSAJE OTRO: Izquierda, Fondo Gris
+            holder.rootLayout.setGravity(Gravity.START);
+            holder.container.setBackgroundResource(R.drawable.bg_message_other);
+            holder.tvUser.setVisibility(View.VISIBLE);
+            holder.tvUser.setText("Contacto"); // Opcional se podrías buscar el nombre real si lo tuvieras
         }
     }
 
     @Override
     public int getItemCount() { return messages.size(); }
 
-    public void addMessage(Message msg) {
-        messages.add(msg);
-        notifyItemInserted(messages.size() - 1);
-    }
-
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvUser, tvBody;
-        LinearLayout container;
+        LinearLayout container, rootLayout;
+
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvUser = itemView.findViewById(R.id.tvMessageUser);
             tvBody = itemView.findViewById(R.id.tvMessageBody);
-            container = (LinearLayout) itemView;
+            container = itemView.findViewById(R.id.messageContainer);
+            rootLayout = itemView.findViewById(R.id.rootLayout);
         }
     }
 }

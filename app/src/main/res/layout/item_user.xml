@@ -1,9 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp"
-    android:orientation="vertical">
-    <TextView android:id="@+id/tvUserName" android:textSize="18sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nombre" />
-    <TextView android:id="@+id/tvUserEmail" android:textSize="14sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="email@example.com" />
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        app:cardCornerRadius="25dp"
+        app:cardElevation="0dp"
+        android:layout_marginEnd="16dp">
+
+        <ImageView
+            android:id="@+id/ivItemProfile"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@mipmap/ic_launcher_round"
+            android:scaleType="centerCrop" />
+    </androidx.cardview.widget.CardView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvUserName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nombre de Usuario"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black" />
+
+        <TextView
+            android:id="@+id/tvUserEmail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="correo@ejemplo.com"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray" />
+    </LinearLayout>
+
 </LinearLayout>
