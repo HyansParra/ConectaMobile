@@ -16,7 +16,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-// Imports de MQTT (Hannesa2 + Paho)
 import info.mqtt.android.service.Ack;
 import info.mqtt.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -46,52 +45,132 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        // Recuperar datos del intent
-        targetUid = getIntent().getStringExtra("targetUid");
-        // Evitar crash si no hay usuario logueado (por seguridad)
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+        try {
+            // 1. Evitar crash si los datos vienen vacíos
+            targetUid = getIntent().getStringExtra("targetUid");
+            if (FirebaseAuth.getInstance().getCurrentUser() == null || targetUid == null) {
+                Toast.makeText(this, "Error: Usuario no identificado", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
             myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        } else {
+
+            // 2. Configurar Firebase
+            String chatId = (myUid.compareTo(targetUid) < 0) ? myUid + "_" + targetUid : targetUid + "_" + myUid;
+            topic = "conectamobile/chat/" + chatId;
+            chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId);
+
+            // 3. Configurar UI
+            etMessage = findViewById(R.id.etMessage);
+            Button btnSend = findViewById(R.id.btnSend);
+            recyclerView = findViewById(R.id.recyclerChat);
+
+            // Layout Manager seguro
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+            layoutManager.setStackFromEnd(true); // Para que empiece desde abajo
+            recyclerView.setLayoutManager(layoutManager);
+
+            messageList = new ArrayList<>();
+            adapter = new ChatAdapter(this, messageList);
+            recyclerView.setAdapter(adapter);
+
+            loadHistory();
+
+            // Iniciamos MQTT con un pequeño retraso para asegurar que la UI esté lista
+            setupMqtt();
+
+            btnSend.setOnClickListener(v -> sendMessage());
+
+        } catch (Exception e) {
+            Log.e("ChatActivity", "Error crítico en onCreate", e);
             finish();
-            return;
         }
+    }
 
-        // Generar ID único de chat (A_B o B_A)
-        String chatId = (myUid.compareTo(targetUid) < 0) ? myUid + "_" + targetUid : targetUid + "_" + myUid;
-        topic = "conectamobile/chat/" + chatId;
-        chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId);
+    private void setupMqtt() {
+        try {
+            // CORRECCIÓN: Usamos UUID de Java para generar un ID único y evitar el error
+            String clientId = java.util.UUID.randomUUID().toString();
 
-        // Configurar UI
-        etMessage = findViewById(R.id.etMessage);
-        Button btnSend = findViewById(R.id.btnSend);
-        recyclerView = findViewById(R.id.recyclerChat);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        messageList = new ArrayList<>();
-        adapter = new ChatAdapter(this, messageList);
-        recyclerView.setAdapter(adapter);
+            mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://broker.hivemq.com:1883", clientId, Ack.AUTO_ACK);
 
-        // 1. Cargar historial de Firebase
-        loadHistory();
+            mqttClient.setCallback(new MqttCallback() {
+                @Override
+                public void connectionLost(Throwable cause) { Log.d("MQTT", "Conexión perdida"); }
 
-        // 2. Conectar MQTT
-        setupMqtt();
+                @Override
+                public void messageArrived(String topic, MqttMessage message) {
+                    // No hacemos nada aquí, Firebase maneja la UI
+                }
 
-        btnSend.setOnClickListener(v -> sendMessage());
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken token) { }
+            });
+
+            IMqttToken token = mqttClient.connect();
+            token.setActionCallback(new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    Log.d("MQTT", "Conectado");
+                    subscribeToTopic();
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Log.e("MQTT", "Fallo al conectar", exception);
+                }
+            });
+
+        } catch (Exception e) {
+            Log.e("MQTT", "Error iniciando MQTT", e);
+        }
+    }
+
+    private void subscribeToTopic() {
+        try {
+            if (mqttClient != null) {
+                mqttClient.subscribe(topic, 0);
+            }
+        } catch (Exception e) {
+            Log.e("MQTT", "Error suscribiendo", e);
+        }
+    }
+
+    private void sendMessage() {
+        String text = etMessage.getText().toString();
+        if (text.isEmpty()) return;
+
+        // 1. Enviar a Firebase (Prioridad: Esto asegura que el mensaje se guarde)
+        Message msg = new Message(myUid, text, System.currentTimeMillis());
+        chatRef.push().setValue(msg);
+        etMessage.setText("");
+
+        // 2. Intentar enviar por MQTT (Si falla, no pasa nada)
+        try {
+            if (mqttClient != null && mqttClient.isConnected()) {
+                mqttClient.publish(topic, new MqttMessage(text.getBytes(StandardCharsets.UTF_8)));
+            }
+        } catch (Exception e) {
+            Log.e("MQTT", "Error enviando mensaje MQTT", e);
+        }
     }
 
     private void loadHistory() {
         chatRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                messageList.clear();
-                for (DataSnapshot snap : snapshot.getChildren()) {
-                    Message msg = snap.getValue(Message.class);
-                    if (msg != null) messageList.add(msg);
-                }
-                adapter.notifyDataSetChanged();
-                // Scroll al último mensaje
-                if (!messageList.isEmpty()) {
-                    recyclerView.scrollToPosition(messageList.size() - 1);
+                try {
+                    messageList.clear();
+                    for (DataSnapshot snap : snapshot.getChildren()) {
+                        Message msg = snap.getValue(Message.class);
+                        if (msg != null) messageList.add(msg);
+                    }
+                    adapter.notifyDataSetChanged();
+                    if (!messageList.isEmpty()) {
+                        recyclerView.scrollToPosition(messageList.size() - 1);
+                    }
+                } catch (Exception e) {
+                    Log.e("Firebase", "Error procesando datos", e);
                 }
             }
             @Override
@@ -99,65 +178,18 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void setupMqtt() {
-        // Usamos el constructor especial para Android 12+
-        mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://broker.hivemq.com:1883", myUid, Ack.AUTO_ACK);
-
-        // CAMBIO CLAVE: Sin try-catch porque esta librería no lanza checked exceptions aquí
-        IMqttToken token = mqttClient.connect();
-        token.setActionCallback(new IMqttActionListener() {
-            @Override
-            public void onSuccess(IMqttToken asyncActionToken) {
-                Log.d("MQTT", "Conectado exitosamente");
-                subscribeToTopic();
+    // --- EL SALVAVIDAS: Evita el crash al salir ---
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try {
+            if (mqttClient != null) {
+                mqttClient.unregisterResources();
+                mqttClient.close();
+                mqttClient.disconnect();
             }
-
-            @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.e("MQTT", "Fallo conexión", exception);
-                Toast.makeText(ChatActivity.this, "Error conectando a chat", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                Log.d("MQTT", "Conexión perdida");
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                // Aquí llega el mensaje en tiempo real
-                // Opcional: Mostrar notificación o actualizar UI si Firebase falla
-                // Por ahora confiamos en el listener de Firebase para la UI
-                Log.d("MQTT", "Mensaje recibido: " + new String(message.getPayload()));
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-            }
-        });
-    }
-
-    private void subscribeToTopic() {
-        // CAMBIO CLAVE: Sin try-catch
-        mqttClient.subscribe(topic, 0);
-    }
-
-    private void sendMessage() {
-        String text = etMessage.getText().toString();
-        if (text.isEmpty()) return;
-
-        Message msg = new Message(myUid, text, System.currentTimeMillis());
-
-        // 1. Publicar en MQTT (Sin try-catch)
-        if (mqttClient.isConnected()) {
-            mqttClient.publish(topic, new MqttMessage(text.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            // Ignoramos errores al cerrar, lo importante es que no crashee
         }
-
-        // 2. Guardar en Firebase (Esto actualiza la UI automáticamente por el listener)
-        chatRef.push().setValue(msg);
-
-        etMessage.setText("");
     }
 }
