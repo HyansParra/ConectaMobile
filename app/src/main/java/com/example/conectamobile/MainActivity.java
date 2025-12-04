@@ -4,12 +4,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast; // Importar Toast
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton; // Importar FAB para el chat global
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -19,6 +19,13 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controlador de la Pantalla Principal.
+ * Responsabilidades:
+ * 1. Listar contactos registrados en Firebase (excepto el usuario actual).
+ * 2. Gestionar la navegación hacia Chats Privados o el Perfil.
+ * 3. Proveer acceso rápido al Canal Global (Interoperabilidad).
+ */
 public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private UserAdapter adapter;
@@ -31,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Verificación de seguridad: Si no hay usuario, volver al login
+        // Seguridad: Validar sesión
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             goToLogin();
             return;
@@ -40,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         mDatabase = FirebaseDatabase.getInstance().getReference("users");
 
+        // Configuración de Lista (RecyclerView)
         recyclerView = findViewById(R.id.recyclerViewUsers);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -47,34 +55,36 @@ public class MainActivity extends AppCompatActivity {
         adapter = new UserAdapter(this, userList);
         recyclerView.setAdapter(adapter);
 
-        // --- LÓGICA NUEVA PARA EL CHAT GLOBAL ---
+        // Botón Flotante (FAB) para Chat Global
+        // Permite probar la comunicación MQTT con clientes externos
         FloatingActionButton fabGlobal = findViewById(R.id.fabGlobalChat);
         fabGlobal.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ChatActivity.class);
-            // Usamos códigos especiales para indicar que es el chat público
+            // Flags especiales para indicar modo "Canal Público"
             intent.putExtra("targetUid", "GLOBAL_CHAT_ID");
             intent.putExtra("targetName", "Canal Público (MyMQTT)");
             startActivity(intent);
             Toast.makeText(this, "Entrando a Chat Público...", Toast.LENGTH_SHORT).show();
         });
-        // ----------------------------------------
 
+        // Cargar usuarios en tiempo real
         loadUsers();
     }
 
     private void loadUsers() {
+        // Listener que se mantiene activo para detectar nuevos usuarios automáticamente
         mDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 userList.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     User user = data.getValue(User.class);
-                    // Mostrar a todos menos a mí mismo
+                    // Filtrar: No mostrarme a mí mismo en la lista de contactos
                     if (user != null && user.uid != null && !user.uid.equals(myUid)) {
                         userList.add(user);
                     }
                 }
-                adapter.notifyDataSetChanged();
+                adapter.notifyDataSetChanged(); // Refrescar UI
             }
 
             @Override
@@ -82,8 +92,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // --- CÓDIGO PARA EL MENÚ DE LOGOUT ---
-
+    // Menú de Opciones (Top Bar)
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
@@ -92,25 +101,20 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId(); // Obtener ID pulsado
-
+        int id = item.getItemId();
         if (id == R.id.action_logout) {
             FirebaseAuth.getInstance().signOut();
             goToLogin();
             return true;
-        }
-        // --- NUEVO: Ir a Perfil ---
-        else if (id == R.id.action_profile) {
+        } else if (id == R.id.action_profile) {
             startActivity(new Intent(this, ProfileActivity.class));
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
     private void goToLogin() {
         Intent intent = new Intent(this, LoginActivity.class);
-        // Esto limpia el historial para que no pueda volver atrás con el botón "Back"
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();

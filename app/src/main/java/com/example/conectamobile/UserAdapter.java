@@ -9,9 +9,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide; // Librería de imágenes
+import com.bumptech.glide.Glide;
 import java.util.List;
 
+/**
+ * Adaptador para la lista de Contactos (RecyclerView).
+ * Vincula los datos del modelo 'User' con la vista 'item_user.xml'.
+ */
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     private List<User> users;
     private Context context;
@@ -34,19 +38,19 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         holder.tvName.setText(user.name);
         holder.tvEmail.setText(user.email);
 
-        // Lógica para cargar la foto con Glide
+        // Uso de Glide para carga eficiente de avatares
         if (user.photoUrl != null && !user.photoUrl.isEmpty()) {
             Glide.with(context)
                     .load(user.photoUrl)
-                    .placeholder(R.mipmap.ic_launcher_round) // Imagen mientras carga
-                    .error(R.mipmap.ic_launcher_round)       // Imagen si falla
-                    .circleCrop()                            // Recorte circular
+                    .placeholder(R.mipmap.ic_launcher_round)
+                    .error(R.mipmap.ic_launcher_round)
+                    .circleCrop()
                     .into(holder.ivProfile);
         } else {
-            // Si no tiene foto, poner la del sistema por defecto
             holder.ivProfile.setImageResource(R.mipmap.ic_launcher_round);
         }
 
+        // Navegación al Chat al hacer clic
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ChatActivity.class);
             intent.putExtra("targetUid", user.uid);
@@ -60,13 +64,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvEmail;
-        ImageView ivProfile; // Referencia a la imagen
+        ImageView ivProfile;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvUserName);
             tvEmail = itemView.findViewById(R.id.tvUserEmail);
-            ivProfile = itemView.findViewById(R.id.ivItemProfile); // Enlazar con el XML
+            ivProfile = itemView.findViewById(R.id.ivItemProfile);
         }
     }
 }

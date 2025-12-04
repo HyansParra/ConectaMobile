@@ -12,6 +12,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 import java.util.List;
 
+/**
+ * Adaptador para los mensajes del Chat.
+ * Maneja la lógica visual de "Burbujas":
+ * - Mensajes propios: Alineados a la derecha, fondo verde.
+ * - Mensajes externos: Alineados a la izquierda, fondo gris.
+ */
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
     private List<Message> messages;
     private Context context;
@@ -20,7 +26,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
     public ChatAdapter(Context context, List<Message> messages) {
         this.context = context;
         this.messages = messages;
-        // Obtenemos el ID actual de forma segura
+        // Obtener UID actual para distinguir mensajes propios
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.currentUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         } else {
@@ -41,20 +47,20 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
         holder.tvBody.setText(msg.text);
 
-        // Lógica de Burbujas y Alineación
+        // Determinar si el mensaje es mío
         boolean isMe = msg.senderId != null && msg.senderId.equals(currentUid);
 
         if (isMe) {
-            // MENSAJE MÍO: Derecha, Fondo Verde
+            // Estilo: Emisor (Derecha)
             holder.rootLayout.setGravity(Gravity.END);
             holder.container.setBackgroundResource(R.drawable.bg_message_me);
-            holder.tvUser.setVisibility(View.GONE); // No necesito ver mi nombre
+            holder.tvUser.setVisibility(View.GONE);
         } else {
-            // MENSAJE OTRO: Izquierda, Fondo Gris
+            // Estilo: Receptor (Izquierda)
             holder.rootLayout.setGravity(Gravity.START);
             holder.container.setBackgroundResource(R.drawable.bg_message_other);
             holder.tvUser.setVisibility(View.VISIBLE);
-            holder.tvUser.setText("Contacto"); // Opcional se podrías buscar el nombre real si lo tuvieras
+            holder.tvUser.setText("Contacto");
         }
     }
 

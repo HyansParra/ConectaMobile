@@ -23,6 +23,11 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+/**
+ * Controlador de Perfil de Usuario.
+ * Implementa operaciones CRUD (Read, Update, Delete) sobre la foto de perfil.
+ * Utiliza Glide para la carga eficiente de la imagen remota.
+ */
 public class ProfileActivity extends AppCompatActivity {
 
     private ImageView ivProfile;
@@ -31,13 +36,12 @@ public class ProfileActivity extends AppCompatActivity {
     private StorageReference mStorage;
     private String myUid;
 
-    // Lanzador de Galería
     private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     Uri imageUri = result.getData().getData();
-                    uploadImage(imageUri); // Subir inmediatamente al elegir
+                    uploadImage(imageUri); // Subida automática al seleccionar
                 }
             }
     );
@@ -62,16 +66,14 @@ public class ProfileActivity extends AppCompatActivity {
         Button btnChange = findViewById(R.id.btnChangePhoto);
         Button btnDelete = findViewById(R.id.btnDeletePhoto);
 
-        // 1. Cargar datos actuales
         loadUserData();
 
-        // 2. Botón Cambiar: Abre galería
         btnChange.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             galleryLauncher.launch(intent);
         });
 
-        // 3. Botón Eliminar: Borra la URL de la base de datos
+        // Opción de eliminar (Pone la URL en blanco)
         btnDelete.setOnClickListener(v -> deletePhoto());
     }
 
@@ -84,11 +86,11 @@ public class ProfileActivity extends AppCompatActivity {
                     tvName.setText(user.name);
                     tvEmail.setText(user.email);
 
-                    // Cargar foto con Glide
+                    // Carga asíncrona con Glide
                     if (user.photoUrl != null && !user.photoUrl.isEmpty()) {
                         Glide.with(ProfileActivity.this)
                                 .load(user.photoUrl)
-                                .circleCrop()
+                                .circleCrop() // Recorte circular automático
                                 .into(ivProfile);
                     } else {
                         ivProfile.setImageResource(R.mipmap.ic_launcher_round);
@@ -103,12 +105,12 @@ public class ProfileActivity extends AppCompatActivity {
     private void uploadImage(Uri imageUri) {
         Toast.makeText(this, "Subiendo foto...", Toast.LENGTH_SHORT).show();
 
-        // Sobreescribimos la foto anterior: profile_images/UID.jpg
+        // Sobreescribir archivo existente para ahorrar espacio
         StorageReference fileRef = mStorage.child("profile_images").child(myUid + ".jpg");
 
         fileRef.putFile(imageUri).addOnSuccessListener(taskSnapshot -> {
             fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                // Actualizar Base de Datos con la nueva URL
+                // Actualizar referencia en la base de datos
                 mDatabase.child("photoUrl").setValue(uri.toString());
                 Toast.makeText(this, "Foto actualizada", Toast.LENGTH_SHORT).show();
             });
@@ -118,7 +120,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void deletePhoto() {
-        // Simplemente ponemos la URL vacía en la base de datos
+        // Borrado lógico: Se elimina la referencia URL, volviendo al icono por defecto
         mDatabase.child("photoUrl").setValue("").addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 Toast.makeText(this, "Foto eliminada", Toast.LENGTH_SHORT).show();
